@@ -31,7 +31,7 @@ chooseDirectory() {
         case "$choice" in
             1) target_dir="/var/www/jexactyl"; break ;;
             2) target_dir="/var/www/pterodactyl"; break ;;
-            *) echo -e "\033[0;31m[✕] Invalid choice\033[0m" ;;
+            *) echo -e "\033[0;33m<Code Editor For Jexactyl> \033[0;31m[✕]\033[0m Invalid choice. Please enter 1 or 2." ;;
         esac
     done
 }
@@ -39,20 +39,20 @@ chooseDirectory() {
 patchWebpack(){
     config_file="$target_dir/webpack.config.js"
     if ! grep -q "monaco-editor" "$config_file"; then
-        sed -i "/rules: \[/a \ \ \ \ {\n            test: /\\.m?js$/,\n            include: /node_modules\\/monaco-editor/,\n            type: 'javascript/auto',\n        }," "$config_file"
+        sed -i "/test: \\\/\.mjs\\\$/,/{N;a \ \ \ \ \ \ \ \ {\n                test: \\\/\.m?js\\\$/,\n                include: [\n                    require('path').resolve(__dirname, 'node_modules/@monaco-editor'),\n                    require('path').resolve(__dirname, 'node_modules/monaco-editor')\n                ],\n                type: 'javascript/auto',\n            }," "$config_file"
         printf "${watermark} Patched webpack.config.js with Monaco loader rule \n"
     else
-        printf "${watermark} Monaco patch already exists \n"
+        printf "${watermark} Monaco patch already exists in webpack.config.js \n"
     fi
 }
 
 unpatchWebpack(){
     config_file="$target_dir/webpack.config.js"
     if grep -q "monaco-editor" "$config_file"; then
-        sed -i '/monaco-editor/{N;N;N;d}' "$config_file"
-        printf "${watermark} Removed Monaco loader rule \n"
+        sed -i "/monaco-editor/{N;N;N;d}" "$config_file"
+        printf "${watermark} Removed Monaco loader rule from webpack.config.js \n"
     else
-        printf "${watermark} No Monaco patch found \n"
+        printf "${watermark} No Monaco patch found in webpack.config.js \n"
     fi
 }
 
@@ -64,7 +64,11 @@ startPterodactyl(){
     cd "$target_dir"
     export NODE_OPTIONS=--openssl-legacy-provider
     yarn install
-    yarn build:production
+    yarn build:production || {
+        printf "${watermark} Retry build without NODE_OPTIONS \n"
+        export NODE_OPTIONS=
+        yarn build:production
+    }
     sudo php artisan optimize:clear
 }
 
@@ -75,27 +79,66 @@ installModule(){
 
     patchWebpack
 
-    rm -rf jexactyl-monaco
+    rm -rvf jexactyl-monaco
     git clone https://github.com/freeutka/jexactyl-monaco.git
 
     cp jexactyl-monaco/resources/FileEditContainer.tsx \
        "$target_dir/resources/scripts/components/server/files/FileEditContainer.tsx"
 
-    rm -rf jexactyl-monaco
+    rm -rvf "$target_dir/jexactyl-monaco"
 
     initNVM
     yarn add esbuild-loader monaco-editor @monaco-editor/react
 
-    printf "${watermark} Module successfully installed \n"
+    printf "${watermark} Module successfully installed to your jexactyl repository \n"
 
     while true; do
-        read -p '<Code Editor For Jexactyl> [?] Rebuild panel assets [y/N]? ' yn
+        read -p '<Code Editor For Jexactyl> [?] Do you want rebuild panel assets [y/N]? ' yn
         case $yn in
-            [Yy]* ) startPterodactyl; break ;;
-            [Nn]* ) exit ;;
-            * ) exit ;;
+            [Yy]* ) startPterodactyl; break;;
+            [Nn]* ) exit;;
+            * ) exit;;
         esac
     done
 }
 
-installModule
+deleteModule(){
+    chooseDirectory
+    printf "${watermark} Deleting module... \n"
+    cd "$target_dir"
+
+    unpatchWebpack
+
+    rm -rvf jexactyl-monaco
+    git clone https://github.com/freeutka/jexactyl-monaco.git
+
+    cp jexactyl-monaco/original-resources/FileEditContainer.tsx \
+       "$target_dir/resources/scripts/components/server/files/FileEditContainer.tsx"
+
+    rm -rvf "$target_dir/jexactyl-monaco"
+
+    initNVM
+    yarn remove esbuild-loader monaco-editor @monaco-editor/react
+
+    printf "${watermark} Module successfully deleted from your jexactyl repository \n"
+
+    while true; do
+        read -p '<Code Editor For Jexactyl> [?] Do you want rebuild panel assets [y/N]? ' yn
+        case $yn in
+            [Yy]* ) startPterodactyl; break;;
+            [Nn]* ) exit;;
+            * ) exit;;
+        esac
+    done
+}
+
+while true; do
+    echo "<Code Editor For Jexactyl> [1] Install module"
+    echo "<Code Editor For Jexactyl> [2] Delete module"
+    read -p '<Code Editor For Jexactyl> [?] Choose an action [1/2]: ' action
+    case $action in
+        1) installModule; break;;
+        2) deleteModule; break;;
+        *) echo "Invalid choice";;
+    esac
+done
