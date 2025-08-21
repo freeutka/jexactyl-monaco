@@ -49,16 +49,16 @@ startPterodactyl(){
 installModule(){
     chooseDirectory
     printf "${watermark} Installing module... \n"
-    cd "$target_dir"
+    cd "$target_dir" || { printf "${watermark} Target directory not found \n"; exit 1; }
 
     rm -rvf jexactyl-monaco
     git clone https://github.com/freeutka/jexactyl-monaco.git
     rm -f resources/scripts/components/server/files/FileEditContainer.tsx
     rm -f webpack.config.js
-    cd jexactyl-monaco
-    mv resources/FileEditContainer.tsx "$target_dir/resources/scripts/components/server/files/"
+    mv jexactyl-monaco/resources/FileEditContainer.tsx "$target_dir/resources/scripts/components/server/files/"
     mv resources/webpack.config.js "$target_dir/"
-    rm -rvf "$target_dir/jexactyl-monaco"
+    cd "$target_dir"
+    rm -rvf jexactyl-monaco
 
     printf "${watermark} Module fully and successfully installed in your jexactyl repository \n"
 
