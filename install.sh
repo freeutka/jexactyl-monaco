@@ -9,15 +9,14 @@ watermark="\033[0;33m<Code Editor For Jexactyl> \033[0;32m[✓]\033[0m"
 target_dir=""
 
 chooseDirectory() {
-    echo -e "<Code Editor For Jexactyl> [1] /var/www/jexactyl   (choose this if you installed the panel using the official Jexactyl documentation)"
-    echo -e "<Code Editor For Jexactyl> [2] /var/www/pterodactyl (choose this if you migrated from Pterodactyl to Jexactyl)"
-
+    echo -e "<Code Editor For Jexactyl> [1] /var/www/jexactyl   (official Jexactyl)"
+    echo -e "<Code Editor For Jexactyl> [2] /var/www/pterodactyl (migrated from Pterodactyl)"
     while true; do
-        read -p "<Code Editor For Jexactyl> [?] Choose jexactyl directory [1/2]: " choice
+        read -p "<Code Editor For Jexactyl> [?] Choose directory [1/2]: " choice
         case "$choice" in
             1) target_dir="/var/www/jexactyl"; break ;;
             2) target_dir="/var/www/pterodactyl"; break ;;
-            *) echo -e "\033[0;33m<Code Editor For Jexactyl> \033[0;31m[✕]\033[0m Invalid choice. Please enter 1 or 2." ;;
+            *) echo -e "${watermark} Invalid choice. Please enter 1 or 2." ;;
         esac
     done
 }
@@ -44,49 +43,37 @@ patchWebpack(){
 }
 
 startPterodactyl(){
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | sudo -E bash -
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
     export NVM_DIR="$HOME/.nvm"
     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
     [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-    nvm install node || {
-        printf "${watermark} nvm command not found, trying to source nvm script directly... \n"
-        . ~/.nvm/nvm.sh
-        nvm install node
-    }
-    apt update
-
+    nvm install node
     npm i -g yarn
     yarn
     yarn add esbuild-loader monaco-editor @monaco-editor/react
     export NODE_OPTIONS=--openssl-legacy-provider
-    yarn build:production || {
-        printf "${watermark} node: --openssl-legacy-provider is not allowed in NODE_OPTIONS \n"
-        export NODE_OPTIONS=
-        yarn build:production
-    }
-    sudo php artisan optimize:clear
+    yarn build:production || { export NODE_OPTIONS=; yarn build:production; }
+    php artisan optimize:clear
 }
 
 installModule(){
     chooseDirectory
     printf "${watermark} Installing module... \n"
-    cd "$target_dir" || { printf "${watermark} Target directory not found \n"; exit 1; }
+    cd "$target_dir"
 
     patchWebpack
 
     rm -rvf jexactyl-monaco
     git clone https://github.com/freeutka/jexactyl-monaco.git
-
     rm -f resources/scripts/components/server/files/FileEditContainer.tsx
-    mv jexactyl-monaco/resources/FileEditContainer.tsx "$target_dir/resources/scripts/components/server/files/"
+    cd jexactyl-monaco
+    mv resources/FileEditContainer.tsx "$target_dir/resources/scripts/components/server/files/"
+    rm -rvf "$target_dir/jexactyl-monaco"
 
-    cd "$target_dir"
-    rm -rvf jexactyl-monaco
-
-    printf "${watermark} Module fully and successfully installed in your jexactyl repository \n"
+    printf "${watermark} Module fully installed \n"
 
     while true; do
-        read -p '<Code Editor For Jexactyl> [?] Do you want rebuild panel assets [y/N]? ' yn
+        read -p '<Code Editor For Jexactyl> [?] Rebuild panel assets [y/N]? ' yn
         case $yn in
             [Yy]* ) startPterodactyl; break;;
             [Nn]* ) exit;;
@@ -96,7 +83,7 @@ installModule(){
 }
 
 while true; do
-    read -p '<Code Editor For Jexactyl> [✓] Are you sure that you want to install "Code Editor For Jexactyl" module [y/N]? ' yn
+    read -p '<Code Editor For Jexactyl> [?] Are you sure you want to install module [y/N]? ' yn
     case $yn in
         [Yy]* ) installModule; break;;
         [Nn]* ) printf "${watermark} Canceled \n"; exit;;
