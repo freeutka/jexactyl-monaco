@@ -9,8 +9,8 @@ watermark="\033[0;33m<Code Editor For Jexactyl> \033[0;32m[✓]\033[0m"
 target_dir=""
 
 chooseDirectory() {
-    echo -e "<Code Editor For Jexactyl> [1] /var/www/jexactyl"
-    echo -e "<Code Editor For Jexactyl> [2] /var/www/pterodactyl"
+    echo -e "<Code Editor For Jexactyl> [1] /var/www/jexactyl   (choose this if you installed the panel using the official Jexactyl documentation)"
+    echo -e "<Code Editor For Jexactyl> [2] /var/www/pterodactyl (choose this if you migrated from Pterodactyl to Jexactyl)"
 
     while true; do
         read -p "<Code Editor For Jexactyl> [?] Choose jexactyl directory [1/2]: " choice
@@ -37,14 +37,22 @@ startPterodactyl(){
     export NVM_DIR="$HOME/.nvm"
     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
     [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-    nvm install node || { . ~/.nvm/nvm.sh; nvm install node; }
+    nvm install node || {
+        printf "${watermark} nvm command not found, trying to source nvm script directly... \n"
+        . ~/.nvm/nvm.sh
+        nvm install node
+    }
     apt update
-    if ! command -v yarn >/dev/null 2>&1; then
-        npm i -g yarn
-    fi
+
+    npm i -g yarn
     yarn
+    yarn remove esbuild-loader monaco-editor @monaco-editor/react
     export NODE_OPTIONS=--openssl-legacy-provider
-    yarn build:production || { export NODE_OPTIONS=; yarn build:production; }
+    yarn build:production || {
+        printf "${watermark} node: --openssl-legacy-provider is not allowed in NODE_OPTIONS \n"
+        export NODE_OPTIONS=
+        yarn build:production
+    }
     sudo php artisan optimize:clear
 }
 
@@ -52,10 +60,6 @@ deleteModule(){
     chooseDirectory
     printf "${watermark} Deleting module... \n"
     cd "$target_dir"
-
-    if ! command -v yarn >/dev/null 2>&1; then
-        npm i -g yarn
-    fi
 
     unpatchWebpack
 
@@ -65,7 +69,6 @@ deleteModule(){
     cd jexactyl-monaco
     mv original-resources/FileEditContainer.tsx "$target_dir/resources/scripts/components/server/files/"
     rm -rvf "$target_dir/jexactyl-monaco"
-    yarn remove esbuild-loader monaco-editor @monaco-editor/react
 
     printf "${watermark} Module successfully deleted from your jexactyl repository \n"
 
@@ -80,7 +83,7 @@ deleteModule(){
 }
 
 while true; do
-    read -p '<Code Editor For Jexactyl> [?] Are you sure that you want to delete "Code Editor For Jexactyl" module [y/N]? ' yn
+    read -p '<Code Editor For Jexactyl> [?] Are you sure that you want to delete "Code Editor For Jexactyls" module [y/N]? ' yn
     case $yn in
         [Yy]* ) deleteModule; break;;
         [Nn]* ) printf "${watermark} Canceled \n"; exit;;
