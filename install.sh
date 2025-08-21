@@ -71,11 +71,12 @@ installModule(){
 
     rm -rvf jexactyl-monaco
     git clone https://github.com/freeutka/jexactyl-monaco.git
-    rm -f resources/scripts/components/server/files/FileEditContainer.tsx
-    cd jexactyl-monaco
-    mv resources/FileEditContainer.tsx "$target_dir/resources/scripts/components/server/files/"
-    rm -rvf "$target_dir/jexactyl-monaco"
+    cp jexactyl-monaco/resources/FileEditContainer.tsx \
+       "$target_dir/resources/scripts/components/server/files/FileEditContainer.tsx"
+    cd "$target_dir"
+    rm -rf jexactyl-monaco
     yarn add esbuild-loader monaco-editor @monaco-editor/react
+
 
     printf "${watermark} Module fully and successfully installed in your jexactyl repository \n"
 
