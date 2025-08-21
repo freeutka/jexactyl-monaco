@@ -44,7 +44,10 @@ startPterodactyl(){
     }
     apt update
 
-    npm i -g yarn
+    if ! command -v yarn >/dev/null 2>&1; then
+        npm i -g yarn
+    fi
+
     yarn
     export NODE_OPTIONS=--openssl-legacy-provider
     yarn build:production || {
@@ -59,6 +62,10 @@ deleteModule(){
     chooseDirectory
     printf "${watermark} Deleting module... \n"
     cd "$target_dir"
+
+    if ! command -v yarn >/dev/null 2>&1; then
+        npm i -g yarn
+    fi
 
     unpatchWebpack
 
@@ -83,7 +90,7 @@ deleteModule(){
 }
 
 while true; do
-    read -p '<Code Editor For Jexactyl> [?] Are you sure that you want to delete "Code Editor For Jexactyls" module [y/N]? ' yn
+    read -p '<Code Editor For Jexactyl> [?] Are you sure that you want to delete "Code Editor For Jexactyl" module [y/N]? ' yn
     case $yn in
         [Yy]* ) deleteModule; break;;
         [Nn]* ) printf "${watermark} Canceled \n"; exit;;
