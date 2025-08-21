@@ -25,7 +25,18 @@ chooseDirectory() {
 patchWebpack(){
     config_file="$target_dir/webpack.config.js"
     if ! grep -q "monaco-editor" "$config_file"; then
-        sed -i '/test: \\/\\.mjs\\$/{n;N;a \            {\n                test: \\/\\.m?js\\$/,\n                include: /node_modules\\/\\@?monaco-editor/,\n                type: '\''javascript/auto'\'',\n                loader: '\''esbuild-loader'\'',\n            },' "$config_file"
+        if ! grep -q "require('path')" "$config_file"; then
+            sed -i "1i const path = require('path');" "$config_file"
+        fi
+
+        sed -i '/test: \\/\\.mjs\\$/{n;N;a \
+            {\
+                test: /\.m?js$/, \
+                include: path.resolve(__dirname, '\''node_modules/monaco-editor'\''), \
+                type: '\''javascript/auto'\'', \
+                loader: '\''esbuild-loader'\'', \
+            },' "$config_file"
+
         printf "${watermark} Patched webpack.config.js with Monaco loader rule \n"
     else
         printf "${watermark} Webpack already patched, skipping \n"
