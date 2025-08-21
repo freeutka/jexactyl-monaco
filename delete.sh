@@ -26,9 +26,9 @@ unpatchWebpack(){
     config_file="$target_dir/webpack.config.js"
     if grep -q "monaco-editor" "$config_file"; then
         sed -i '/monaco-editor/{N;N;N;d}' "$config_file"
-        printf "${watermark} Removed Monaco loader rule from webpack.config.js \n"
+        printf "${watermark} Removed Monaco loader rule \n"
     else
-        printf "${watermark} No Monaco patch found in webpack.config.js \n"
+        printf "${watermark} No Monaco patch found \n"
     fi
 }
 
