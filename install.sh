@@ -44,7 +44,10 @@ startPterodactyl(){
     }
     apt update
 
-    npm i -g yarn
+    if ! command -v yarn >/dev/null 2>&1; then
+        npm i -g yarn
+    fi
+
     yarn
     export NODE_OPTIONS=--openssl-legacy-provider
     yarn build:production || {
@@ -59,6 +62,10 @@ installModule(){
     chooseDirectory
     printf "${watermark} Installing module... \n"
     cd "$target_dir"
+
+    if ! command -v yarn >/dev/null 2>&1; then
+        npm i -g yarn
+    fi
 
     patchWebpack
 
