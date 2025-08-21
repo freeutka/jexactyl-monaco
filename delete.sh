@@ -49,16 +49,16 @@ startPterodactyl(){
 deleteModule(){
     chooseDirectory
     printf "${watermark} Deleting module... \n"
-    cd "$target_dir"
 
+    cd "$target_dir" || exit 1
     rm -rvf jexactyl-monaco
     git clone https://github.com/freeutka/jexactyl-monaco.git
     rm -f resources/scripts/components/server/files/FileEditContainer.tsx
     rm -f webpack.config.js
-    cd jexactyl-monaco
-    mv original-resources/FileEditContainer.tsx "$target_dir/resources/scripts/components/server/files/"
+    mv jexactyl-monaco/original-resources/FileEditContainer.tsx "$target_dir/resources/scripts/components/server/files/"
     mv original-resources/webpack.config.js "$target_dir/"
-    rm -rvf "$target_dir/jexactyl-monaco"
+    cd "$target_dir"
+    rm -rvf jexactyl-monaco
 
     printf "${watermark} Module successfully deleted from your jexactyl repository \n"
 
