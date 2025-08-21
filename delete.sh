@@ -63,12 +63,14 @@ deleteModule(){
 
     unpatchWebpack
 
+    cd "$target_dir" || exit 1
     rm -rvf jexactyl-monaco
     git clone https://github.com/freeutka/jexactyl-monaco.git
     rm -f resources/scripts/components/server/files/FileEditContainer.tsx
-    cd jexactyl-monaco
-    mv original-resources/FileEditContainer.tsx "$target_dir/resources/scripts/components/server/files/"
-    rm -rvf "$target_dir/jexactyl-monaco"
+    mv jexactyl-monaco/original-resources/FileEditContainer.tsx "$target_dir/resources/scripts/components/server/files/"
+    cd "$target_dir"
+    rm -rvf jexactyl-monaco
+
 
     printf "${watermark} Module successfully deleted from your jexactyl repository \n"
 
