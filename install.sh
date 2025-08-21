@@ -8,6 +8,20 @@ fi
 watermark="\033[0;33m<Code Editor For Jexactyl> \033[0;32m[✓]\033[0m"
 target_dir=""
 
+initNVM() {
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+    if ! command -v nvm >/dev/null 2>&1; then
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+        . "$NVM_DIR/nvm.sh"
+    fi
+
+    nvm install 20
+    nvm use 20
+}
+
 chooseDirectory() {
     echo -e "<Code Editor For Jexactyl> [1] /var/www/jexactyl   (choose this if you installed the panel using the official Jexactyl documentation)"
     echo -e "<Code Editor For Jexactyl> [2] /var/www/pterodactyl (choose this if you migrated from Pterodactyl to Jexactyl)"
@@ -25,33 +39,33 @@ chooseDirectory() {
 patchWebpack(){
     config_file="$target_dir/webpack.config.js"
     if ! grep -q "monaco-editor" "$config_file"; then
-        sed -i '/test: \\/\\.mjs\\$/{n;N;a \            {\n                test: \\/\\.m?js\\$/,\n                include: /node_modules\\/\\@?monaco-editor/,\n                type: '\''javascript/auto'\'',\n                loader: '\''esbuild-loader'\'',\n            },' "$config_file"
+        sed -i "/test: \\\/\.mjs\\\$/,/{N;a \ \ \ \ \ \ \ \ {\n                test: \\\/\.m?js\\\$/,\n                include: /node_modules\/@monaco-editor/,\n                type: 'javascript/auto',\n            }," "$config_file"
         printf "${watermark} Patched webpack.config.js with Monaco loader rule \n"
     else
-        printf "${watermark} Webpack already patched, skipping \n"
+        printf "${watermark} Monaco patch already exists in webpack.config.js \n"
+    fi
+}
+
+unpatchWebpack(){
+    config_file="$target_dir/webpack.config.js"
+    if grep -q "monaco-editor" "$config_file"; then
+        sed -i "/monaco-editor/{N;N;N;d}" "$config_file"
+        printf "${watermark} Removed Monaco loader rule from webpack.config.js \n"
+    else
+        printf "${watermark} No Monaco patch found in webpack.config.js \n"
     fi
 }
 
 startPterodactyl(){
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | sudo -E bash -
-    export NVM_DIR="$HOME/.nvm"
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-    nvm install node || {
-        printf "${watermark} nvm command not found, trying to source nvm script directly... \n"
-        . ~/.nvm/nvm.sh
-        nvm install node
-    }
+    initNVM
     apt update
+    npm i -g yarn
 
-    if ! command -v yarn >/dev/null 2>&1; then
-        npm i -g yarn
-    fi
-
-    yarn
+    cd "$target_dir"
     export NODE_OPTIONS=--openssl-legacy-provider
+    yarn install
     yarn build:production || {
-        printf "${watermark} node: --openssl-legacy-provider is not allowed in NODE_OPTIONS \n"
+        printf "${watermark} Retry build without NODE_OPTIONS \n"
         export NODE_OPTIONS=
         yarn build:production
     }
@@ -63,22 +77,50 @@ installModule(){
     printf "${watermark} Installing module... \n"
     cd "$target_dir"
 
-    if ! command -v yarn >/dev/null 2>&1; then
-        npm i -g yarn
-    fi
-
     patchWebpack
 
     rm -rvf jexactyl-monaco
     git clone https://github.com/freeutka/jexactyl-monaco.git
+
     cp jexactyl-monaco/resources/FileEditContainer.tsx \
        "$target_dir/resources/scripts/components/server/files/FileEditContainer.tsx"
-    cd "$target_dir"
-    rm -rf jexactyl-monaco
+
+    rm -rvf "$target_dir/jexactyl-monaco"
+
+    initNVM
     yarn add esbuild-loader monaco-editor @monaco-editor/react
 
+    printf "${watermark} Module successfully installed to your jexactyl repository \n"
 
-    printf "${watermark} Module fully and successfully installed in your jexactyl repository \n"
+    while true; do
+        read -p '<Code Editor For Jexactyl> [?] Do you want rebuild panel assets [y/N]? ' yn
+        case $yn in
+            [Yy]* ) startPterodactyl; break;;
+            [Nn]* ) exit;;
+            * ) exit;;
+        esac
+    done
+}
+
+deleteModule(){
+    chooseDirectory
+    printf "${watermark} Deleting module... \n"
+    cd "$target_dir"
+
+    unpatchWebpack
+
+    rm -rvf jexactyl-monaco
+    git clone https://github.com/freeutka/jexactyl-monaco.git
+
+    cp jexactyl-monaco/original-resources/FileEditContainer.tsx \
+       "$target_dir/resources/scripts/components/server/files/FileEditContainer.tsx"
+
+    rm -rvf "$target_dir/jexactyl-monaco"
+
+    initNVM
+    yarn remove esbuild-loader monaco-editor @monaco-editor/react
+
+    printf "${watermark} Module successfully deleted from your jexactyl repository \n"
 
     while true; do
         read -p '<Code Editor For Jexactyl> [?] Do you want rebuild panel assets [y/N]? ' yn
@@ -91,10 +133,12 @@ installModule(){
 }
 
 while true; do
-    read -p '<Code Editor For Jexactyl> [✓] Are you sure that you want to install "Code Editor For Jexactyl" module [y/N]? ' yn
-    case $yn in
-        [Yy]* ) installModule; break;;
-        [Nn]* ) printf "${watermark} Canceled \n"; exit;;
-        * ) exit;;
+    echo "<Code Editor For Jexactyl> [1] Install module"
+    echo "<Code Editor For Jexactyl> [2] Delete module"
+    read -p '<Code Editor For Jexactyl> [?] Choose an action [1/2]: ' action
+    case $action in
+        1) installModule; break;;
+        2) deleteModule; break;;
+        *) echo "Invalid choice";;
     esac
 done
