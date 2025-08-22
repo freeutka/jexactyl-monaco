@@ -53,11 +53,13 @@ deleteModule(){
     cd "$target_dir" || exit 1
     rm -rvf jexactyl-monaco
     git clone https://github.com/freeutka/jexactyl-monaco.git
+
     rm -f resources/scripts/components/server/files/FileEditContainer.tsx
     rm -f webpack.config.js
+
     mv jexactyl-monaco/original-resources/FileEditContainer.tsx "$target_dir/resources/scripts/components/server/files/"
-    mv original-resources/webpack.config.js "$target_dir/"
-    cd "$target_dir"
+    mv jexactyl-monaco/original-resources/webpack.config.js "$target_dir/"
+
     rm -rvf jexactyl-monaco
 
     printf "${watermark} Module successfully deleted from your jexactyl repository \n"
@@ -73,7 +75,7 @@ deleteModule(){
 }
 
 while true; do
-    read -p '<Code Editor For Jexactyl> [?] Are you sure that you want to delete "Code Editor For Jexactyls" module [y/N]? ' yn
+    read -p '<Code Editor For Jexactyl> [?] Are you sure that you want to delete "Code Editor For Jexactyl" module [y/N]? ' yn
     case $yn in
         [Yy]* ) deleteModule; break;;
         [Nn]* ) printf "${watermark} Canceled \n"; exit;;
