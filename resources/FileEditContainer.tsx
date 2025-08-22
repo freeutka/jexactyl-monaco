@@ -87,6 +87,7 @@ export default () => {
     const uuid = ServerContext.useStoreState((state) => state.server.data!.uuid);
     const setDirectory = ServerContext.useStoreActions((actions) => actions.files.setDirectory);
     const { addError, clearFlashes } = useFlash();
+    const [theme, setTheme] = useState('vs-dark');
 
     let fetchFileContent: null | (() => Promise<string>) = null;
 
@@ -198,14 +199,23 @@ export default () => {
             </div>
             <div css={tw`flex justify-end mt-4`}>
                 <div css={tw`flex-1 sm:flex-none rounded bg-neutral-900 mr-4`}>
-                    <Select value={mode} onChange={(e) => setMode(e.currentTarget.value)}>
-                        {modes.map((mode) => (
-                            <option key={`${mode.name}_${mode.mime}`} value={mode.mime}>
-                                {mode.name}
-                            </option>
-                        ))}
-                    </Select>
+                    <Select
+                        value={theme}
+                        onChange={(e) => {
+                            const selectedTheme = e.currentTarget.value;
+                            setTheme(selectedTheme);                     
+
+                            if (editorRef.current) {
+                                editorRef.current.updateOptions({ theme: selectedTheme });
+                            }
+                        }}
+                    >
+                        <option value="vs">Light</option>
+                        <option value="vs-dark">Dark</option>
+                        <option value="hc-black">High Contrast</option>
+                    </Select>                    
                 </div>
+            
                 {action === 'edit' ? (
                     <Can action={'file.update'}>
                         <Button css={tw`flex-1 sm:flex-none`} onClick={() => save()}>
@@ -219,7 +229,7 @@ export default () => {
                         </Button>
                     </Can>
                 )}
-            </div>
+            </div>                                
         </PageContentBlock>
     );
 };
