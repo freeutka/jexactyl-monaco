@@ -3,7 +3,8 @@
 `jexactyl-monaco` is a free-to-use addon for **Jexactyl** that allows you to **edit server files** directly from the panel using the **Monaco Editor** (the same editor used in VSCode).  
 This makes file management faster, easier, and more intuitive without the need for external software.
 
-👉 Inspired by modern code editors for seamless integration into Jexactyl.
+👉 Revised and expanded version of [Code Editor for Pterodactyl](https://www.sourcexchange.net/products/code-editor-for-pterodactyl).
+👉 Inspired by modern code editors for seamless integration into Jexactyl.  
 
 ![Full Screen showcase](https://github.com/freeutka/jexactyl-monaco/blob/main/pictures/full_screen1.png?raw=true)
 
